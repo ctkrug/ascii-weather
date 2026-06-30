@@ -238,6 +238,21 @@ def test_render_taller_art_has_no_trailing_whitespace_past_info():
         assert line == line.rstrip()
 
 
+def test_render_avoids_negative_zero_temperature():
+    location = Location(name="Reykjavik", country="IS", latitude=64.1, longitude=-21.9)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=-0.4,
+        feels_like_c=-0.2,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    output = render(location, conditions, use_color=False)
+    assert "-0°C" not in output
+    assert "0°C feels like 0°C" in output
+
+
 def test_render_includes_place_and_temperature():
     location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
     conditions = CurrentConditions(
