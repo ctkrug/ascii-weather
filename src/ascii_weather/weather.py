@@ -63,6 +63,7 @@ class CurrentConditions:
     feels_like_c: float
     humidity_pct: float
     wind_kph: float
+    raw: dict | None = None
 
 
 def condition_for_code(code: int) -> tuple[str, str]:
@@ -120,4 +121,5 @@ def fetch_current_conditions(location: Location, timeout: float = 10.0) -> Curre
         feels_like_c=current["apparent_temperature"],
         humidity_pct=current["relative_humidity_2m"],
         wind_kph=current["wind_speed_10m"],
+        raw=current,
     )
