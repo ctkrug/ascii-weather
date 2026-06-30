@@ -2,10 +2,13 @@ import json
 
 import pytest
 
+import requests
+
 from ascii_weather.cli import build_parser, main, render, render_json, should_use_color
 from ascii_weather.weather import (
     AmbiguousCityError,
     CityCandidate,
+    CityNotFoundError,
     CurrentConditions,
     Location,
     WeatherServiceError,
@@ -40,6 +43,29 @@ def test_main_prints_friendly_message_on_weather_service_error(monkeypatch, caps
     assert main(["Lisbon"]) == 2
     err = capsys.readouterr().err
     assert "couldn't reach the weather service" in err
+
+
+def test_main_prints_friendly_message_on_city_not_found(monkeypatch, capsys):
+    def fake_geocode(city):
+        raise CityNotFoundError("No location found for 'Nowhereville'")
+
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", fake_geocode)
+
+    assert main(["Nowhereville"]) == 1
+    err = capsys.readouterr().err
+    assert "No location found for 'Nowhereville'" in err
+
+
+def test_main_prints_network_error_on_request_exception(monkeypatch, capsys):
+    def fake_geocode(city):
+        raise requests.ConnectionError("DNS lookup failed")
+
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", fake_geocode)
+
+    assert main(["Lisbon"]) == 2
+    err = capsys.readouterr().err
+    assert "network error" in err
+    assert "DNS lookup failed" in err
 
 
 def test_main_prints_disambiguation_prompt_on_ambiguous_city(monkeypatch, capsys):
@@ -81,6 +107,25 @@ def test_main_verbose_prints_coordinates_and_raw_response(monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "38.7" in err
     assert "weather_code" in err
+
+
+def test_main_json_flag_prints_machine_readable_output(monkeypatch, capsys):
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", lambda city: location)
+    monkeypatch.setattr("ascii_weather.cli.fetch_current_conditions", lambda loc: conditions)
+
+    assert main(["Lisbon", "--json"]) == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["location"]["name"] == "Lisbon"
+    assert out["condition"] == "clear"
 
 
 def test_main_uses_env_var_city_when_omitted(monkeypatch):
