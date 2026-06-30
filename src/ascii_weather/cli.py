@@ -1,6 +1,7 @@
 """Command-line entrypoint for ASCII Weather."""
 
 import argparse
+import os
 import sys
 
 import requests
@@ -17,10 +18,12 @@ from ascii_weather.weather import (
 )
 
 
-def render(location, conditions, units: str = "metric") -> str:
+def render(location, conditions, units: str = "metric", use_color: bool = True) -> str:
     art = get_art(conditions.condition)
-    color = CONDITION_COLOR.get(conditions.condition, "bright_white")
-    lines = [colorize(art, color)]
+    if use_color:
+        color = CONDITION_COLOR.get(conditions.condition, "bright_white")
+        art = colorize(art, color)
+    lines = [art]
     place = location.name
     if location.country:
         place = f"{location.name}, {location.country}"
@@ -56,9 +59,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Display units: metric (°C, km/h) or imperial (°F, mph)",
     )
     parser.add_argument(
+        "--no-color", action="store_true", help="Disable ANSI color output"
+    )
+    parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
     return parser
+
+
+def should_use_color(no_color_flag: bool) -> bool:
+    """Decide whether to emit ANSI color, honoring --no-color, NO_COLOR, and non-TTY output."""
+    if no_color_flag or os.environ.get("NO_COLOR"):
+        return False
+    return sys.stdout.isatty()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -75,7 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"weather: network error: {exc}", file=sys.stderr)
         return 2
 
-    print(render(location, conditions, units=args.units))
+    use_color = should_use_color(args.no_color)
+    print(render(location, conditions, units=args.units, use_color=use_color))
     return 0
 
 
