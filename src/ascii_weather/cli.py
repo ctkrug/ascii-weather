@@ -100,6 +100,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", help="Output current conditions as JSON"
     )
     parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Show resolved coordinates and the raw API response on stderr",
+    )
+    parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
     return parser
@@ -131,6 +137,14 @@ def main(argv: list[str] | None = None) -> int:
     except requests.RequestException as exc:
         print(f"weather: network error: {exc}", file=sys.stderr)
         return 2
+
+    if args.verbose:
+        print(
+            f"weather: resolved {city!r} to {location.name}, {location.country} "
+            f"({location.latitude}, {location.longitude})",
+            file=sys.stderr,
+        )
+        print(f"weather: raw response: {json.dumps(conditions.raw)}", file=sys.stderr)
 
     if args.json:
         print(render_json(location, conditions, units=args.units))
