@@ -46,6 +46,11 @@ WMO_CODES = {
 }
 
 
+# Wind speed (km/h) above which conditions are considered windy enough to
+# show a dedicated scene instead of the plain clear/cloudy art.
+WINDY_THRESHOLD_KPH = 30.0
+
+
 class CityNotFoundError(Exception):
     """Raised when the geocoding API has no match for the given city name."""
 
@@ -96,6 +101,11 @@ class CurrentConditions:
 def condition_for_code(code: int) -> tuple[str, str]:
     """Map a WMO weather code to a (condition key, description) pair."""
     return WMO_CODES.get(code, ("unknown", "Unknown"))
+
+
+def is_windy(wind_kph: float) -> bool:
+    """Return True when wind speed is high enough to warrant the windy scene."""
+    return wind_kph >= WINDY_THRESHOLD_KPH
 
 
 def celsius_to_fahrenheit(celsius: float) -> float:
