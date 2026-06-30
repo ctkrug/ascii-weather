@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ascii-weather — the weather, drawn in your terminal</title>
+<meta name="description" content="A tiny command-line tool that fetches the current weather for any city and renders it as colorful ASCII art. No API key required.">
+<meta property="og:title" content="ascii-weather">
+<meta property="og:description" content="The weather, drawn in your terminal — colorful ASCII art for any city. No API key required.">
+<style>
+  :root{--bg:#0b0e14;--panel:#11161f;--ink:#e6edf3;--mut:#8b98a9;--acc:#5ec8f7;--y:#f0c674;--g:#9ece6a;--line:#202736;--shadow:0 10px 40px rgba(0,0,0,.4)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1200px 600px at 50% -10%,#16202e,var(--bg));color:var(--ink);
+    font:16px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 22px}
+  a{color:var(--acc);text-decoration:none} a:hover{text-decoration:underline}
+  code,pre{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  .nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
+  .brand{font-weight:700;letter-spacing:.3px} .brand .dot{color:var(--y)}
+  .btn{display:inline-block;padding:9px 16px;border-radius:9px;font-weight:600;font-size:14px}
+  .btn.gh{background:#fff;color:#0b0e14} .btn.gh:hover{text-decoration:none;opacity:.92}
+  .btn.ghost{border:1px solid var(--line);color:var(--ink)} .btn.ghost:hover{text-decoration:none;border-color:var(--acc)}
+  header.hero{text-align:center;padding:40px 0 14px}
+  h1{font-size:clamp(34px,7vw,56px);letter-spacing:-.02em;line-height:1.05}
+  .tag{color:var(--mut);font-size:clamp(16px,3.5vw,21px);margin-top:14px}
+  .cta{display:flex;gap:12px;justify-content:center;margin:26px 0 8px;flex-wrap:wrap}
+  .term{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+    margin:30px 0;overflow:hidden}
+  .term .bar{display:flex;gap:7px;padding:12px 14px;border-bottom:1px solid var(--line);background:#0e131c}
+  .term .bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .b1{background:#ff5f56}.b2{background:#ffbd2e}.b3{background:#27c93f}
+  .term pre{padding:20px 22px;font-size:14px;line-height:1.5;overflow:auto;color:#cfe8ff}
+  .term .c-sun{color:var(--y)} .term .c-info{color:var(--mut)} .term .c-cmd{color:var(--g)}
+  section{padding:18px 0}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--mut);margin-bottom:16px}
+  .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+  .feat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .feat h3{font-size:15px;margin-bottom:5px} .feat p{color:var(--mut);font-size:14px}
+  pre.block{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;font-size:14px;color:#cfe8ff}
+  pre.block .p{color:var(--g)} pre.block .c{color:var(--mut)}
+  footer{border-top:1px solid var(--line);margin-top:40px;padding:26px 0 48px;color:var(--mut);font-size:14px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav">
+    <span class="brand">ascii&#8209;weather<span class="dot">.</span></span>
+    <a class="btn gh" href="https://github.com/ctkrug/ascii-weather" target="_blank" rel="noopener">★ View on GitHub</a>
+  </nav>
+
+  <header class="hero">
+    <h1>The weather, drawn in your terminal.</h1>
+    <p class="tag">A tiny CLI that fetches current conditions for any city and renders them as
+      colorful ASCII art. No API key, no account — just <code>weather Lisbon</code>.</p>
+    <div class="cta">
+      <a class="btn gh" href="https://github.com/ctkrug/ascii-weather" target="_blank" rel="noopener">★ View on GitHub</a>
+      <a class="btn ghost" href="#install">Install &rarr;</a>
+    </div>
+  </header>
+
+  <div class="term" aria-label="example output">
+    <div class="bar"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+<pre><span class="c-cmd">$ weather Lisbon</span>
+
+       <span class="c-sun">\   /</span>
+       <span class="c-sun"> .-.</span>      <span>Lisbon, Portugal</span>
+    <span class="c-sun">― (   ) ―</span>   24&deg;C   feels like 25&deg;C
+       <span class="c-sun">`-'</span>      <span class="c-info">Humidity 45%   Wind 8 km/h   Clear</span>
+       <span class="c-sun">/   \</span>
+</pre>
+  </div>
+
+  <section>
+    <h2>What it does</h2>
+    <div class="features">
+      <div class="feat"><h3>Condition-aware scenes</h3><p>Sun, clouds, rain, snow, fog, storms, and a moon &amp; stars at night — each weather state gets its own ASCII scene.</p></div>
+      <div class="feat"><h3>Colored to match</h3><p>The shape <em>and</em> color tell you the weather before you've read a word. Auto-disables color when piped or with <code>NO_COLOR</code>.</p></div>
+      <div class="feat"><h3>No API key</h3><p>Uses the free <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> API — no account, no token, nothing to configure.</p></div>
+      <div class="feat"><h3>Scriptable</h3><p><code>--json</code> for machine-readable output, <code>--units imperial</code>, <code>--no-color</code>, an env-var default, and smart city disambiguation.</p></div>
+    </div>
+  </section>
+
+  <section id="install">
+    <h2>Install</h2>
+<pre class="block"><span class="c"># Requires Python 3.10+ — installs a `weather` command</span>
+pip install git+https://github.com/ctkrug/ascii-weather.git</pre>
+  </section>
+
+  <section>
+    <h2>Usage</h2>
+<pre class="block"><span class="p">$ weather Lisbon</span>                     <span class="c"># current conditions for a city</span>
+<span class="p">$ weather Lisbon --units imperial</span>    <span class="c"># &deg;F and mph</span>
+<span class="p">$ weather Lisbon --json</span>              <span class="c"># machine-readable output</span>
+<span class="p">$ weather "Springfield, Illinois"</span>    <span class="c"># disambiguate shared city names</span></pre>
+  </section>
+
+  <footer>
+    <span>Built by <a href="https://github.com/ctkrug" target="_blank" rel="noopener">Charlie Krug</a> · MIT licensed</span>
+    <span><a href="https://github.com/ctkrug/ascii-weather" target="_blank" rel="noopener">Source on GitHub &rarr;</a></span>
+  </footer>
+</div>
+</body>
+</html>
