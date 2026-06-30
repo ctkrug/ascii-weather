@@ -12,6 +12,7 @@ from ascii_weather.art import get_art
 from ascii_weather.colors import CONDITION_COLOR, colorize
 from ascii_weather.weather import (
     CityNotFoundError,
+    WeatherServiceError,
     celsius_to_fahrenheit,
     fetch_current_conditions,
     geocode_city,
@@ -134,6 +135,12 @@ def main(argv: list[str] | None = None) -> int:
     except CityNotFoundError as exc:
         print(f"weather: {exc}", file=sys.stderr)
         return 1
+    except WeatherServiceError:
+        print(
+            "weather: couldn't reach the weather service, please try again later",
+            file=sys.stderr,
+        )
+        return 2
     except requests.RequestException as exc:
         print(f"weather: network error: {exc}", file=sys.stderr)
         return 2
