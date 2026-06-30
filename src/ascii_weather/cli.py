@@ -26,7 +26,8 @@ def render_ambiguous_city_error(exc: AmbiguousCityError) -> str:
     lines = [f"weather: {exc.query!r} matches multiple locations, please be more specific:"]
     for candidate in exc.candidates:
         place = candidate.admin1 or candidate.country
-        lines.append(f"  - {candidate.name}, {place}, {candidate.country_code}")
+        parts = [part for part in (candidate.name, place, candidate.country_code) if part]
+        lines.append(f"  - {', '.join(parts)}")
     lines.append(f'weather: try `weather "{exc.query}, <state or country>"`')
     return "\n".join(lines)
 
