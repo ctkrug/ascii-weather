@@ -4,7 +4,14 @@ import re
 import pytest
 import requests
 
-from ascii_weather.cli import build_parser, main, render, render_json, should_use_color
+from ascii_weather.cli import (
+    build_parser,
+    main,
+    render,
+    render_ambiguous_city_error,
+    render_json,
+    should_use_color,
+)
 from ascii_weather.weather import (
     AmbiguousCityError,
     CityCandidate,
@@ -43,6 +50,16 @@ def test_main_prints_friendly_message_on_weather_service_error(monkeypatch, caps
     assert main(["Lisbon"]) == 2
     err = capsys.readouterr().err
     assert "couldn't reach the weather service" in err
+
+
+def test_render_ambiguous_city_error_skips_empty_fields():
+    exc = AmbiguousCityError(
+        "Test",
+        [CityCandidate(name="Test", country="", country_code="XX", admin1="")],
+    )
+    output = render_ambiguous_city_error(exc)
+    assert "- Test, XX" in output
+    assert ", ," not in output
 
 
 def test_main_prints_friendly_message_on_city_not_found(monkeypatch, capsys):
