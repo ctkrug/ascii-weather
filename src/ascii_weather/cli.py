@@ -31,34 +31,53 @@ def render_ambiguous_city_error(exc: AmbiguousCityError) -> str:
     return "\n".join(lines)
 
 
+def _align_art_and_info(art: str, info_lines: list[str], color: str | None) -> str:
+    """Lay out ASCII art and info text side by side, art on the left.
+
+    Padding is computed from the plain (uncolored) art so ANSI escape
+    codes never throw off column alignment.
+    """
+    art_lines = art.strip("\n").splitlines()
+    width = max((len(line) for line in art_lines), default=0)
+
+    rows = []
+    for i in range(max(len(art_lines), len(info_lines))):
+        art_line = art_lines[i] if i < len(art_lines) else ""
+        info_line = info_lines[i] if i < len(info_lines) else ""
+        if info_line:
+            padded = art_line.ljust(width)
+            styled = colorize(padded, color) if color else padded
+            rows.append(f"{styled}  {info_line}")
+        else:
+            rows.append(colorize(art_line, color) if color else art_line)
+    return "\n".join(rows)
+
+
 def render(location, conditions, units: str = "metric", use_color: bool = True) -> str:
     windy = is_windy(conditions.wind_kph)
     art = get_art(conditions.condition, is_day=conditions.is_day, windy=windy)
-    if use_color:
-        color = color_for_condition(conditions.condition, is_day=conditions.is_day)
-        art = colorize(art, color)
-    lines = [art]
+    color = color_for_condition(conditions.condition, is_day=conditions.is_day) if use_color else None
+
     place = location.name
     if location.country:
         place = f"{location.name}, {location.country}"
-    lines.append(place)
-    lines.append(conditions.description)
+    info_lines = [place, conditions.description]
 
     if units == "imperial":
         temp = celsius_to_fahrenheit(conditions.temperature_c)
         feels_like = celsius_to_fahrenheit(conditions.feels_like_c)
         wind = kph_to_mph(conditions.wind_kph)
-        lines.append(f"{temp:.0f}°F feels like {feels_like:.0f}°F")
-        lines.append(f"Humidity {conditions.humidity_pct:.0f}%  Wind {wind:.0f} mph")
+        info_lines.append(f"{temp:.0f}°F feels like {feels_like:.0f}°F")
+        info_lines.append(f"Humidity {conditions.humidity_pct:.0f}%  Wind {wind:.0f} mph")
     else:
-        lines.append(
+        info_lines.append(
             f"{conditions.temperature_c:.0f}°C "
             f"feels like {conditions.feels_like_c:.0f}°C"
         )
-        lines.append(
+        info_lines.append(
             f"Humidity {conditions.humidity_pct:.0f}%  Wind {conditions.wind_kph:.0f} km/h"
         )
-    return "\n".join(lines)
+    return _align_art_and_info(art, info_lines, color)
 
 
 def render_json(location, conditions, units: str = "metric") -> str:
