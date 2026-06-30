@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ascii-weather"
+version = "0.1.0"
+description = "Current weather for any city, rendered as colorful ASCII art in your terminal."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Charlie Krug" }]
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+weather = "ascii_weather.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
