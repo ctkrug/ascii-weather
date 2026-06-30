@@ -159,6 +159,66 @@ def test_render_json_produces_parseable_payload():
     assert payload["temperature"] == 21.0
 
 
+def test_render_uses_windy_scene_above_threshold():
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    calm = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    gusty = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=45,
+    )
+    assert render(location, calm, use_color=False) != render(location, gusty, use_color=False)
+
+
+def test_render_uses_night_art_when_not_daytime():
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    day = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+        is_day=True,
+    )
+    night = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+        is_day=False,
+    )
+    assert render(location, day, use_color=False) != render(location, night, use_color=False)
+
+
+def test_render_json_includes_is_day_and_windy():
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=45,
+        is_day=False,
+    )
+    payload = json.loads(render_json(location, conditions))
+    assert payload["is_day"] is False
+    assert payload["windy"] is True
+
+
 def test_render_json_converts_units_when_imperial():
     location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
     conditions = CurrentConditions(
