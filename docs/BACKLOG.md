@@ -5,7 +5,7 @@ intentionally coarse — they'll be refined as they're picked up.
 
 ## Epic 1 — Core weather pipeline
 
-- [ ] Add retry/timeout handling around the Open-Meteo geocoding and forecast
+- [x] Add retry/timeout handling around the Open-Meteo geocoding and forecast
       requests, with a friendly message on repeated failure
 - [ ] Support disambiguating cities with the same name (e.g. multiple
       "Springfield" results) instead of silently taking the first match
