@@ -11,7 +11,7 @@ intentionally coarse — they'll be refined as they're picked up.
       "Springfield" results) instead of silently taking the first match
 - [ ] Add a small on-disk cache (short TTL) so repeated lookups of the same
       city don't always hit the network
-- [ ] Support `--units` for metric/imperial (°C/km/h vs °F/mph)
+- [x] Support `--units` for metric/imperial (°C/km/h vs °F/mph)
 
 ## Epic 2 — ASCII art & rendering
 
