@@ -1,4 +1,6 @@
-from ascii_weather.cli import build_parser, render, should_use_color
+import json
+
+from ascii_weather.cli import build_parser, render, render_json, should_use_color
 from ascii_weather.weather import CurrentConditions, Location
 
 
@@ -68,3 +70,34 @@ def test_should_use_color_respects_no_color_flag(monkeypatch):
 def test_should_use_color_respects_no_color_env_var(monkeypatch):
     monkeypatch.setenv("NO_COLOR", "1")
     assert should_use_color(no_color_flag=False) is False
+
+
+def test_render_json_produces_parseable_payload():
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    payload = json.loads(render_json(location, conditions))
+    assert payload["location"]["name"] == "Lisbon"
+    assert payload["condition"] == "clear"
+    assert payload["temperature"] == 21.0
+
+
+def test_render_json_converts_units_when_imperial():
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=0.0,
+        feels_like_c=0.0,
+        humidity_pct=58,
+        wind_kph=100,
+    )
+    payload = json.loads(render_json(location, conditions, units="imperial"))
+    assert payload["temperature"] == 32.0
+    assert payload["units"] == "imperial"
