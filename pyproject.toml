@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ascii-weather"
-version = "0.1.0"
+version = "1.0.0"
 description = "Current weather for any city, rendered as colorful ASCII art in your terminal."
 readme = "README.md"
 license = { text = "MIT" }
