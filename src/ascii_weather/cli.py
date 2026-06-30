@@ -80,7 +80,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="weather", description="Current conditions for any city, in ASCII art."
     )
-    parser.add_argument("city", help="City name, e.g. 'Lisbon' or 'San Francisco'")
+    parser.add_argument(
+        "city",
+        nargs="?",
+        default=None,
+        help="City name, e.g. 'Lisbon' or 'San Francisco'. "
+        "Falls back to the ASCII_WEATHER_CITY environment variable if omitted.",
+    )
     parser.add_argument(
         "--units",
         choices=["metric", "imperial"],
@@ -110,8 +116,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    city = args.city or os.environ.get("ASCII_WEATHER_CITY")
+    if not city:
+        parser.error(
+            "city is required (pass it as an argument or set ASCII_WEATHER_CITY)"
+        )
+
     try:
-        location = geocode_city(args.city)
+        location = geocode_city(city)
         conditions = fetch_current_conditions(location)
     except CityNotFoundError as exc:
         print(f"weather: {exc}", file=sys.stderr)
