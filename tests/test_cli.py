@@ -25,6 +25,26 @@ def test_main_errors_without_city_or_env_var(monkeypatch, capsys):
     assert "ASCII_WEATHER_CITY" in capsys.readouterr().err
 
 
+def test_main_verbose_prints_coordinates_and_raw_response(monkeypatch, capsys):
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+        raw={"weather_code": 0},
+    )
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", lambda city: location)
+    monkeypatch.setattr("ascii_weather.cli.fetch_current_conditions", lambda loc: conditions)
+
+    assert main(["Lisbon", "-v"]) == 0
+    err = capsys.readouterr().err
+    assert "38.7" in err
+    assert "weather_code" in err
+
+
 def test_main_uses_env_var_city_when_omitted(monkeypatch):
     monkeypatch.setenv("ASCII_WEATHER_CITY", "Lisbon")
 
