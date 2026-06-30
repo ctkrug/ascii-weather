@@ -1,5 +1,9 @@
 # ASCII Weather
 
+[![CI](https://github.com/ctkrug/ascii-weather/actions/workflows/ci.yml/badge.svg)](https://github.com/ctkrug/ascii-weather/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+
 A command-line tool that fetches the current weather for any city and renders
 it as colorful ASCII art right in your terminal. No API key required, no
 browser tab, no clutter — just the sky, drawn in text.
