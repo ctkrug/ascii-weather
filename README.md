@@ -13,6 +13,20 @@ $ weather Lisbon
                 Humidity 58%  Wind 11 km/h
 ```
 
+## Usage
+
+```
+$ weather Lisbon                     # current conditions for a city
+$ weather Lisbon --units imperial    # °F and mph instead of °C and km/h
+$ weather Lisbon --json              # machine-readable output for scripting
+$ weather Lisbon --no-color          # plain text, no ANSI color
+$ weather Lisbon -v                  # also print resolved coordinates + raw API response
+$ ASCII_WEATHER_CITY=Lisbon weather  # omit the city arg, fall back to an env var
+```
+
+Color is also automatically disabled when stdout isn't a terminal (e.g. piping
+to a file) or when the `NO_COLOR` environment variable is set.
+
 ## Why
 
 Checking the weather shouldn't require leaving the terminal. ASCII Weather
@@ -28,9 +42,14 @@ Planned for v1 (see [`docs/VISION.md`](docs/VISION.md) and
 - Look up current conditions for any city by name
 - Distinct ASCII art scenes for the major weather conditions (clear, cloudy,
   rain, snow, thunderstorm, fog, etc.)
-- Terminal color rendering that adapts to the condition and time of day
-- Key stats at a glance: temperature, feels-like, humidity, wind
-- Sensible fallbacks when a city can't be found or the network is down
+- Terminal color rendering that adapts to the condition, with `--no-color`
+  and `NO_COLOR` support for piping into other tools
+- Key stats at a glance: temperature, feels-like, humidity, wind, with
+  `--units metric|imperial`
+- `--json` output for scripting, `-v/--verbose` for debugging lookups
+- A default city via the `ASCII_WEATHER_CITY` environment variable
+- Sensible fallbacks when a city can't be found or the network is down,
+  including automatic retries on transient failures
 - Fast: a single command, a single API round-trip, no setup beyond install
 
 ## Stack
