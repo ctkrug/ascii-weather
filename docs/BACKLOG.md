@@ -27,8 +27,8 @@ intentionally coarse — they'll be refined as they're picked up.
 ## Epic 3 — CLI polish & UX
 
 - [x] Add `--json` output mode for scripting/piping into other tools
-- [ ] Support reading a default city from an env var or config file so
-      `weather` with no arguments still works
+- [x] Support reading a default city from an env var or config file so
+      `weather` with no arguments still works (`ASCII_WEATHER_CITY`)
 - [ ] Improve error messages for ambiguous/misspelled city names (e.g. "did
       you mean...")
 - [ ] Add `-v/--verbose` to show the resolved coordinates and raw API
