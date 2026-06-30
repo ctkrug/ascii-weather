@@ -1,10 +1,12 @@
 import requests
 
 from ascii_weather.weather import (
+    Location,
     WeatherServiceError,
     _get_with_retry,
     celsius_to_fahrenheit,
     condition_for_code,
+    fetch_current_conditions,
     kph_to_mph,
 )
 
@@ -66,3 +68,43 @@ def test_get_with_retry_raises_friendly_error_after_exhausting_retries(monkeypat
         assert False, "expected WeatherServiceError"
     except WeatherServiceError as exc:
         assert "3 attempts" in str(exc)
+
+
+class _FakeForecastResponse:
+    def __init__(self, is_day):
+        self._is_day = is_day
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return {
+            "current": {
+                "temperature_2m": 10.0,
+                "apparent_temperature": 8.0,
+                "relative_humidity_2m": 50,
+                "wind_speed_10m": 5.0,
+                "weather_code": 0,
+                "is_day": self._is_day,
+            }
+        }
+
+
+def test_fetch_current_conditions_parses_is_day_true(monkeypatch):
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _FakeForecastResponse(1),
+    )
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = fetch_current_conditions(location)
+    assert conditions.is_day is True
+
+
+def test_fetch_current_conditions_parses_is_day_false(monkeypatch):
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _FakeForecastResponse(0),
+    )
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = fetch_current_conditions(location)
+    assert conditions.is_day is False
