@@ -322,6 +322,23 @@ def test_should_use_color_respects_no_color_set_to_empty_string(monkeypatch):
     assert should_use_color(no_color_flag=False) is False
 
 
+def test_render_json_avoids_negative_zero_temperature():
+    location = Location(name="Reykjavik", country="IS", latitude=64.1, longitude=-21.9)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=-0.04,
+        feels_like_c=-0.02,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    output = render_json(location, conditions)
+    assert "-0.0" not in output
+    payload = json.loads(output)
+    assert payload["temperature"] == 0.0
+    assert str(payload["temperature"]) == "0.0"
+
+
 def test_render_json_produces_parseable_payload():
     location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
     conditions = CurrentConditions(
