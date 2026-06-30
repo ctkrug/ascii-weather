@@ -87,6 +87,7 @@ class CurrentConditions:
     feels_like_c: float
     humidity_pct: float
     wind_kph: float
+    is_day: bool = True
     raw: dict | None = None
 
 
@@ -128,7 +129,7 @@ def fetch_current_conditions(location: Location, timeout: float = 10.0) -> Curre
             "latitude": location.latitude,
             "longitude": location.longitude,
             "current": "temperature_2m,apparent_temperature,relative_humidity_2m,"
-            "wind_speed_10m,weather_code",
+            "wind_speed_10m,weather_code,is_day",
         },
         timeout,
     )
@@ -141,5 +142,6 @@ def fetch_current_conditions(location: Location, timeout: float = 10.0) -> Curre
         feels_like_c=current["apparent_temperature"],
         humidity_pct=current["relative_humidity_2m"],
         wind_kph=current["wind_speed_10m"],
+        is_day=bool(current.get("is_day", 1)),
         raw=current,
     )
