@@ -70,9 +70,6 @@ else competing for your attention.
 
 ## Features
 
-Planned for v1 (see [`docs/VISION.md`](docs/VISION.md) and
-[`docs/BACKLOG.md`](docs/BACKLOG.md) for the full breakdown):
-
 - Look up current conditions for any city by name
 - Distinct ASCII art scenes for the major weather conditions (clear, cloudy,
   windy, light/normal/heavy rain and snow, thunderstorm, fog, etc.), with
@@ -98,8 +95,16 @@ Planned for v1 (see [`docs/VISION.md`](docs/VISION.md) and
 
 ## Status
 
-Early scaffold — see [`docs/VISION.md`](docs/VISION.md) for where this is
-headed and [`docs/BACKLOG.md`](docs/BACKLOG.md) for the planned work.
+Stable — `v1.0.0`. The full feature set above is implemented, covered by a
+green test suite (CI on Python 3.10–3.12), and validated end-to-end against
+the live API. See [`docs/VISION.md`](docs/VISION.md) for the design rationale
+and [`docs/BACKLOG.md`](docs/BACKLOG.md) for what's still on the wishlist
+(on-disk caching, PyPI publishing).
+
+## Contributing
+
+Bug reports and pull requests are welcome — see
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for dev setup and how to run the checks.
 
 ## License
 
