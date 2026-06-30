@@ -1,6 +1,8 @@
 import json
 
-from ascii_weather.cli import build_parser, render, render_json, should_use_color
+import pytest
+
+from ascii_weather.cli import build_parser, main, render, render_json, should_use_color
 from ascii_weather.weather import CurrentConditions, Location
 
 
@@ -8,6 +10,44 @@ def test_parser_requires_city():
     parser = build_parser()
     args = parser.parse_args(["Lisbon"])
     assert args.city == "Lisbon"
+
+
+def test_parser_allows_omitted_city():
+    parser = build_parser()
+    args = parser.parse_args([])
+    assert args.city is None
+
+
+def test_main_errors_without_city_or_env_var(monkeypatch, capsys):
+    monkeypatch.delenv("ASCII_WEATHER_CITY", raising=False)
+    with pytest.raises(SystemExit):
+        main([])
+    assert "ASCII_WEATHER_CITY" in capsys.readouterr().err
+
+
+def test_main_uses_env_var_city_when_omitted(monkeypatch):
+    monkeypatch.setenv("ASCII_WEATHER_CITY", "Lisbon")
+
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    seen_city = {}
+
+    def fake_geocode(city):
+        seen_city["city"] = city
+        return location
+
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", fake_geocode)
+    monkeypatch.setattr("ascii_weather.cli.fetch_current_conditions", lambda loc: conditions)
+
+    assert main([]) == 0
+    assert seen_city["city"] == "Lisbon"
 
 
 def test_render_includes_place_and_temperature():
