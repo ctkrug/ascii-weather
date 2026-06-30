@@ -196,6 +196,8 @@ def geocode_city(city: str, timeout: float = 10.0) -> Location:
     name, _, region = city.partition(",")
     name = name.strip()
     region = region.strip()
+    if not name:
+        raise CityNotFoundError(f"No location found for {city!r}")
 
     response = _get_with_retry(GEOCODE_URL, {"name": name, "count": 10}, timeout)
     results = response.json().get("results") or []
