@@ -1,12 +1,15 @@
 import requests
 
 from ascii_weather.weather import (
+    AmbiguousCityError,
+    CityNotFoundError,
     Location,
     WeatherServiceError,
     _get_with_retry,
     celsius_to_fahrenheit,
     condition_for_code,
     fetch_current_conditions,
+    geocode_city,
     is_windy,
     kph_to_mph,
 )
@@ -129,3 +132,96 @@ def test_fetch_current_conditions_parses_is_day_false(monkeypatch):
     location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
     conditions = fetch_current_conditions(location)
     assert conditions.is_day is False
+
+
+class _FakeGeocodeResponse:
+    def __init__(self, results):
+        self._results = results
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return {"results": self._results}
+
+
+def _geocode_result(name, country, country_code, admin1, population, lat=0.0, lon=0.0):
+    return {
+        "name": name,
+        "country": country,
+        "country_code": country_code,
+        "admin1": admin1,
+        "population": population,
+        "latitude": lat,
+        "longitude": lon,
+    }
+
+
+def test_geocode_city_picks_dominant_result_unambiguously(monkeypatch):
+    results = [
+        _geocode_result("Lisbon", "Portugal", "PT", "Lisbon District", 517802),
+        _geocode_result("Lisbon", "United States", "US", "Ohio", 2727),
+    ]
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _FakeGeocodeResponse(results),
+    )
+    location = geocode_city("Lisbon")
+    assert location.country == "PT"
+
+
+def test_geocode_city_raises_ambiguous_for_comparable_results(monkeypatch):
+    results = [
+        _geocode_result("Springfield", "United States", "US", "Missouri", 170188),
+        _geocode_result("Springfield", "United States", "US", "Illinois", 114394),
+    ]
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _FakeGeocodeResponse(results),
+    )
+    try:
+        geocode_city("Springfield")
+        assert False, "expected AmbiguousCityError"
+    except AmbiguousCityError as exc:
+        admin1s = {c.admin1 for c in exc.candidates}
+        assert admin1s == {"Missouri", "Illinois"}
+
+
+def test_geocode_city_region_suffix_disambiguates(monkeypatch):
+    results = [
+        _geocode_result("Springfield", "United States", "US", "Missouri", 170188),
+        _geocode_result("Springfield", "United States", "US", "Illinois", 114394),
+    ]
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _FakeGeocodeResponse(results),
+    )
+    location = geocode_city("Springfield, Illinois")
+    assert location.country == "US"
+
+
+def test_geocode_city_region_suffix_with_no_match_raises_not_found(monkeypatch):
+    results = [
+        _geocode_result("Springfield", "United States", "US", "Missouri", 170188),
+    ]
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _FakeGeocodeResponse(results),
+    )
+    try:
+        geocode_city("Springfield, Germany")
+        assert False, "expected CityNotFoundError"
+    except CityNotFoundError:
+        pass
+
+
+def test_geocode_city_raises_not_found_when_no_results(monkeypatch):
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _FakeGeocodeResponse([]),
+    )
+    try:
+        geocode_city("Nowhereville")
+        assert False, "expected CityNotFoundError"
+    except CityNotFoundError:
+        pass
