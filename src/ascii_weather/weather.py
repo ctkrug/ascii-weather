@@ -3,6 +3,7 @@
 No API key is required: https://open-meteo.com/
 """
 
+import time
 from dataclasses import dataclass
 
 import requests
@@ -47,6 +48,29 @@ class CityNotFoundError(Exception):
     """Raised when the geocoding API has no match for the given city name."""
 
 
+class WeatherServiceError(Exception):
+    """Raised when the weather service can't be reached after retrying."""
+
+
+def _get_with_retry(
+    url: str, params: dict, timeout: float, retries: int = 2, backoff: float = 0.5
+) -> requests.Response:
+    """GET a URL, retrying transient failures with exponential backoff."""
+    last_exc: requests.RequestException | None = None
+    for attempt in range(retries + 1):
+        try:
+            response = requests.get(url, params=params, timeout=timeout)
+            response.raise_for_status()
+            return response
+        except requests.RequestException as exc:
+            last_exc = exc
+            if attempt < retries:
+                time.sleep(backoff * (2**attempt))
+    raise WeatherServiceError(
+        f"could not reach the weather service after {retries + 1} attempts: {last_exc}"
+    ) from last_exc
+
+
 @dataclass
 class Location:
     name: str
@@ -83,10 +107,7 @@ def kph_to_mph(kph: float) -> float:
 
 def geocode_city(city: str, timeout: float = 10.0) -> Location:
     """Resolve a city name to a Location via the Open-Meteo geocoding API."""
-    response = requests.get(
-        GEOCODE_URL, params={"name": city, "count": 1}, timeout=timeout
-    )
-    response.raise_for_status()
+    response = _get_with_retry(GEOCODE_URL, {"name": city, "count": 1}, timeout)
     results = response.json().get("results") or []
     if not results:
         raise CityNotFoundError(f"No location found for {city!r}")
@@ -101,17 +122,16 @@ def geocode_city(city: str, timeout: float = 10.0) -> Location:
 
 def fetch_current_conditions(location: Location, timeout: float = 10.0) -> CurrentConditions:
     """Fetch current weather conditions for a Location via the Open-Meteo forecast API."""
-    response = requests.get(
+    response = _get_with_retry(
         FORECAST_URL,
-        params={
+        {
             "latitude": location.latitude,
             "longitude": location.longitude,
             "current": "temperature_2m,apparent_temperature,relative_humidity_2m,"
             "wind_speed_10m,weather_code",
         },
-        timeout=timeout,
+        timeout,
     )
-    response.raise_for_status()
     current = response.json()["current"]
     condition, description = condition_for_code(current["weather_code"])
     return CurrentConditions(
