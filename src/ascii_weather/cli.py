@@ -11,6 +11,7 @@ from ascii_weather import __version__
 from ascii_weather.art import get_art
 from ascii_weather.colors import color_for_condition, colorize
 from ascii_weather.weather import (
+    AmbiguousCityError,
     CityNotFoundError,
     WeatherServiceError,
     celsius_to_fahrenheit,
@@ -19,6 +20,15 @@ from ascii_weather.weather import (
     is_windy,
     kph_to_mph,
 )
+
+
+def render_ambiguous_city_error(exc: AmbiguousCityError) -> str:
+    lines = [f"weather: {exc.query!r} matches multiple locations, please be more specific:"]
+    for candidate in exc.candidates:
+        place = candidate.admin1 or candidate.country
+        lines.append(f"  - {candidate.name}, {place}, {candidate.country_code}")
+    lines.append(f'weather: try `weather "{exc.query}, <state or country>"`')
+    return "\n".join(lines)
 
 
 def render(location, conditions, units: str = "metric", use_color: bool = True) -> str:
@@ -138,6 +148,9 @@ def main(argv: list[str] | None = None) -> int:
         conditions = fetch_current_conditions(location)
     except CityNotFoundError as exc:
         print(f"weather: {exc}", file=sys.stderr)
+        return 1
+    except AmbiguousCityError as exc:
+        print(render_ambiguous_city_error(exc), file=sys.stderr)
         return 1
     except WeatherServiceError:
         print(
