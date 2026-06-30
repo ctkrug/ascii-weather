@@ -22,6 +22,26 @@ Each condition gets its own scene — clouds, rain, snow, fog, a storm, a moon
 and stars at night — colored to match, so the *shape* of the output tells you
 the weather before you've read a word.
 
+## Install
+
+Requires Python 3.10+. Install straight from the repository:
+
+```sh
+pip install git+https://github.com/ctkrug/ascii-weather.git
+```
+
+Or clone and install locally (use [`pipx`](https://pipx.pypa.io/) to get an
+isolated `weather` command on your PATH):
+
+```sh
+git clone https://github.com/ctkrug/ascii-weather.git
+cd ascii-weather
+pip install .          # or: pipx install .
+```
+
+Either way you get a `weather` command. No API key or account is needed — it
+calls the free [Open-Meteo](https://open-meteo.com/) API.
+
 ## Usage
 
 ```
