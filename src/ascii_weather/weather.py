@@ -70,6 +70,16 @@ def condition_for_code(code: int) -> tuple[str, str]:
     return WMO_CODES.get(code, ("unknown", "Unknown"))
 
 
+def celsius_to_fahrenheit(celsius: float) -> float:
+    """Convert a Celsius temperature to Fahrenheit."""
+    return celsius * 9 / 5 + 32
+
+
+def kph_to_mph(kph: float) -> float:
+    """Convert a speed in kilometers per hour to miles per hour."""
+    return kph * 0.621371
+
+
 def geocode_city(city: str, timeout: float = 10.0) -> Location:
     """Resolve a city name to a Location via the Open-Meteo geocoding API."""
     response = requests.get(
