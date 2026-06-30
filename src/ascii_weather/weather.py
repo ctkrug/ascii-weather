@@ -95,6 +95,14 @@ def _get_with_retry(
     ) from last_exc
 
 
+def _parse_json(response: requests.Response) -> dict:
+    """Parse a response body as JSON, raising a friendly error on malformed output."""
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise WeatherServiceError(f"the weather service returned an invalid response: {exc}") from exc
+
+
 @dataclass
 class Location:
     name: str
@@ -200,7 +208,7 @@ def geocode_city(city: str, timeout: float = 10.0) -> Location:
         raise CityNotFoundError(f"No location found for {city!r}")
 
     response = _get_with_retry(GEOCODE_URL, {"name": name, "count": 10}, timeout)
-    results = response.json().get("results") or []
+    results = _parse_json(response).get("results") or []
     if not results:
         raise CityNotFoundError(f"No location found for {city!r}")
 
@@ -213,12 +221,17 @@ def geocode_city(city: str, timeout: float = 10.0) -> Location:
     if top is None:
         raise AmbiguousCityError(name, [_to_candidate(r) for r in rivals])
 
-    return Location(
-        name=top["name"],
-        country=top.get("country_code", ""),
-        latitude=top["latitude"],
-        longitude=top["longitude"],
-    )
+    try:
+        return Location(
+            name=top["name"],
+            country=top.get("country_code", ""),
+            latitude=top["latitude"],
+            longitude=top["longitude"],
+        )
+    except KeyError as exc:
+        raise WeatherServiceError(
+            f"the weather service returned an incomplete location: missing {exc}"
+        ) from exc
 
 
 def fetch_current_conditions(location: Location, timeout: float = 10.0) -> CurrentConditions:
@@ -233,15 +246,20 @@ def fetch_current_conditions(location: Location, timeout: float = 10.0) -> Curre
         },
         timeout,
     )
-    current = response.json()["current"]
-    condition, description = condition_for_code(current["weather_code"])
-    return CurrentConditions(
-        condition=condition,
-        description=description,
-        temperature_c=current["temperature_2m"],
-        feels_like_c=current["apparent_temperature"],
-        humidity_pct=current["relative_humidity_2m"],
-        wind_kph=current["wind_speed_10m"],
-        is_day=bool(current.get("is_day", 1)),
-        raw=current,
-    )
+    try:
+        current = _parse_json(response)["current"]
+        condition, description = condition_for_code(current["weather_code"])
+        return CurrentConditions(
+            condition=condition,
+            description=description,
+            temperature_c=current["temperature_2m"],
+            feels_like_c=current["apparent_temperature"],
+            humidity_pct=current["relative_humidity_2m"],
+            wind_kph=current["wind_speed_10m"],
+            is_day=bool(current.get("is_day", 1)),
+            raw=current,
+        )
+    except KeyError as exc:
+        raise WeatherServiceError(
+            f"the weather service returned incomplete conditions: missing {exc}"
+        ) from exc
