@@ -5,6 +5,9 @@ import pytest
 import requests
 
 from ascii_weather.cli import (
+    _config_units,
+    _normalize_units,
+    _resolve_units,
     build_parser,
     main,
     render,
@@ -428,3 +431,241 @@ def test_render_json_converts_units_when_imperial():
     payload = json.loads(render_json(location, conditions, units="imperial"))
     assert payload["temperature"] == 32.0
     assert payload["units"] == "imperial"
+
+
+# ---------------------------------------------------------------------------
+# -f / -c shorthand flags
+# ---------------------------------------------------------------------------
+
+def test_parser_fahrenheit_short_flag():
+    args = build_parser().parse_args(["Lisbon", "-f"])
+    assert args.fahrenheit is True
+    assert args.celsius is False
+    assert args.units is None
+
+
+def test_parser_fahrenheit_long_flag():
+    args = build_parser().parse_args(["Lisbon", "--fahrenheit"])
+    assert args.fahrenheit is True
+
+
+def test_parser_celsius_short_flag():
+    args = build_parser().parse_args(["Lisbon", "-c"])
+    assert args.celsius is True
+    assert args.fahrenheit is False
+    assert args.units is None
+
+
+def test_parser_celsius_long_flag():
+    args = build_parser().parse_args(["Lisbon", "--celsius"])
+    assert args.celsius is True
+
+
+def test_parser_rejects_f_and_c_together():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["Lisbon", "-f", "-c"])
+
+
+def test_parser_rejects_fahrenheit_and_units_together():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["Lisbon", "-f", "--units", "metric"])
+
+
+def test_parser_rejects_celsius_and_units_together():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["Lisbon", "-c", "--units", "imperial"])
+
+
+# ---------------------------------------------------------------------------
+# _normalize_units
+# ---------------------------------------------------------------------------
+
+def test_normalize_units_metric_aliases():
+    for val in ("metric", "c", "celsius", "C", "Celsius", "METRIC"):
+        assert _normalize_units(val) == "metric", val
+
+
+def test_normalize_units_imperial_aliases():
+    for val in ("imperial", "f", "fahrenheit", "F", "Fahrenheit", "IMPERIAL"):
+        assert _normalize_units(val) == "imperial", val
+
+
+def test_normalize_units_returns_none_for_unknown():
+    assert _normalize_units("kelvin") is None
+    assert _normalize_units("") is None
+    assert _normalize_units("banana") is None
+
+
+# ---------------------------------------------------------------------------
+# _config_units
+# ---------------------------------------------------------------------------
+
+def test_config_units_reads_metric_aliases(tmp_path):
+    for alias in ("c", "celsius", "metric"):
+        cfg = tmp_path / "config"
+        cfg.write_text(f"[defaults]\nunits = {alias}\n")
+        assert _config_units(cfg) == "metric", alias
+
+
+def test_config_units_reads_imperial_aliases(tmp_path):
+    for alias in ("f", "fahrenheit", "imperial"):
+        cfg = tmp_path / "config"
+        cfg.write_text(f"[defaults]\nunits = {alias}\n")
+        assert _config_units(cfg) == "imperial", alias
+
+
+def test_config_units_returns_none_for_missing_file(tmp_path):
+    assert _config_units(tmp_path / "nonexistent") is None
+
+
+def test_config_units_returns_none_for_unrecognized_value(tmp_path):
+    cfg = tmp_path / "config"
+    cfg.write_text("[defaults]\nunits = kelvin\n")
+    assert _config_units(cfg) is None
+
+
+def test_config_units_returns_none_when_key_absent(tmp_path):
+    cfg = tmp_path / "config"
+    cfg.write_text("[defaults]\n")
+    assert _config_units(cfg) is None
+
+
+# ---------------------------------------------------------------------------
+# _resolve_units — priority stack
+# ---------------------------------------------------------------------------
+
+def test_resolve_units_fahrenheit_flag_wins(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASCII_WEATHER_UNITS", "c")
+    args = build_parser().parse_args(["Lisbon", "-f"])
+    assert _resolve_units(args, tmp_path / "none") == "imperial"
+
+
+def test_resolve_units_celsius_flag_wins(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASCII_WEATHER_UNITS", "f")
+    args = build_parser().parse_args(["Lisbon", "-c"])
+    assert _resolve_units(args, tmp_path / "none") == "metric"
+
+
+def test_resolve_units_units_flag_wins(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASCII_WEATHER_UNITS", "c")
+    args = build_parser().parse_args(["Lisbon", "--units", "imperial"])
+    assert _resolve_units(args, tmp_path / "none") == "imperial"
+
+
+def test_resolve_units_env_var_metric(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASCII_WEATHER_UNITS", "celsius")
+    args = build_parser().parse_args(["Lisbon"])
+    assert _resolve_units(args, tmp_path / "none") == "metric"
+
+
+def test_resolve_units_env_var_imperial(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASCII_WEATHER_UNITS", "fahrenheit")
+    args = build_parser().parse_args(["Lisbon"])
+    assert _resolve_units(args, tmp_path / "none") == "imperial"
+
+
+def test_resolve_units_env_var_short_f(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASCII_WEATHER_UNITS", "f")
+    args = build_parser().parse_args(["Lisbon"])
+    assert _resolve_units(args, tmp_path / "none") == "imperial"
+
+
+def test_resolve_units_env_var_ignores_unknown_falls_to_default(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASCII_WEATHER_UNITS", "kelvin")
+    args = build_parser().parse_args(["Lisbon"])
+    assert _resolve_units(args, tmp_path / "none") == "metric"
+
+
+def test_resolve_units_config_file(monkeypatch, tmp_path):
+    monkeypatch.delenv("ASCII_WEATHER_UNITS", raising=False)
+    cfg = tmp_path / "config"
+    cfg.write_text("[defaults]\nunits = f\n")
+    args = build_parser().parse_args(["Lisbon"])
+    assert _resolve_units(args, cfg) == "imperial"
+
+
+def test_resolve_units_flag_beats_config_file(monkeypatch, tmp_path):
+    monkeypatch.delenv("ASCII_WEATHER_UNITS", raising=False)
+    cfg = tmp_path / "config"
+    cfg.write_text("[defaults]\nunits = f\n")
+    args = build_parser().parse_args(["Lisbon", "-c"])
+    assert _resolve_units(args, cfg) == "metric"
+
+
+def test_resolve_units_env_beats_config_file(monkeypatch, tmp_path):
+    monkeypatch.setenv("ASCII_WEATHER_UNITS", "c")
+    cfg = tmp_path / "config"
+    cfg.write_text("[defaults]\nunits = f\n")
+    args = build_parser().parse_args(["Lisbon"])
+    assert _resolve_units(args, cfg) == "metric"
+
+
+def test_resolve_units_default_is_metric(monkeypatch, tmp_path):
+    monkeypatch.delenv("ASCII_WEATHER_UNITS", raising=False)
+    args = build_parser().parse_args(["Lisbon"])
+    assert _resolve_units(args, tmp_path / "none") == "metric"
+
+
+# ---------------------------------------------------------------------------
+# main() integration with -f / -c
+# ---------------------------------------------------------------------------
+
+def _stub(location, conditions):
+    """Helper: patch geocode + fetch so main() doesn't hit the network."""
+    return location, conditions
+
+
+def test_main_fahrenheit_flag_renders_imperial(monkeypatch, capsys):
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=0.0,
+        feels_like_c=0.0,
+        humidity_pct=58,
+        wind_kph=100,
+    )
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", lambda city: location)
+    monkeypatch.setattr("ascii_weather.cli.fetch_current_conditions", lambda loc: conditions)
+    assert main(["Lisbon", "-f"]) == 0
+    out = capsys.readouterr().out
+    assert "32°F" in out
+    assert "mph" in out
+    assert "°C" not in out
+
+
+def test_main_celsius_flag_renders_metric(monkeypatch, capsys):
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", lambda city: location)
+    monkeypatch.setattr("ascii_weather.cli.fetch_current_conditions", lambda loc: conditions)
+    assert main(["Lisbon", "-c"]) == 0
+    out = capsys.readouterr().out
+    assert "°C" in out
+    assert "km/h" in out
+    assert "°F" not in out
+
+
+def test_main_json_uses_fahrenheit_flag(monkeypatch, capsys):
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=0.0,
+        feels_like_c=0.0,
+        humidity_pct=58,
+        wind_kph=100,
+    )
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", lambda city: location)
+    monkeypatch.setattr("ascii_weather.cli.fetch_current_conditions", lambda loc: conditions)
+    assert main(["Lisbon", "-f", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["units"] == "imperial"
+    assert payload["temperature"] == 32.0

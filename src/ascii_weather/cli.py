@@ -1,9 +1,11 @@
 """Command-line entrypoint for ASCII Weather."""
 
 import argparse
+import configparser
 import json
 import os
 import sys
+from pathlib import Path
 
 import requests
 
@@ -20,6 +22,33 @@ from ascii_weather.weather import (
     is_windy,
     kph_to_mph,
 )
+
+_CONFIG_PATH = Path.home() / ".config" / "ascii-weather" / "config"
+
+_HELP_EPILOG = """\
+examples:
+  weather Lisbon                    current conditions in °C (default)
+  weather Lisbon -f                 switch to °F and mph on the fly
+  weather Lisbon -c                 stay in °C and km/h (explicit)
+  weather "Springfield, IL"         disambiguate a city with state/country
+  weather Lisbon --json             machine-readable JSON for scripting
+  weather Lisbon --no-color         plain text, no ANSI escape codes
+  weather Lisbon -v                 also print resolved coordinates + raw API
+  ASCII_WEATHER_CITY=Lisbon weather omit the city argument via env var
+
+setting a default unit system:
+  Set it once, never type -f or -c again.
+
+  Option 1 — environment variable (add to ~/.zshrc or ~/.bashrc):
+    export ASCII_WEATHER_UNITS=f
+
+  Option 2 — config file at ~/.config/ascii-weather/config:
+    [defaults]
+    units = f
+
+  Both accept: f  fahrenheit  imperial  c  celsius  metric
+  Priority:    command-line flag  >  ASCII_WEATHER_UNITS  >  config file  >  metric
+"""
 
 
 def render_ambiguous_city_error(exc: AmbiguousCityError) -> str:
@@ -127,23 +156,88 @@ def render_json(location, conditions, units: str = "metric") -> str:
     return json.dumps(payload)
 
 
+def _normalize_units(value: str) -> str | None:
+    """Normalize a units string to 'metric' or 'imperial'. Returns None if unrecognized."""
+    v = value.strip().lower()
+    if v in ("metric", "c", "celsius"):
+        return "metric"
+    if v in ("imperial", "f", "fahrenheit"):
+        return "imperial"
+    return None
+
+
+def _config_units(config_path: Path | None = None) -> str | None:
+    """Read the units preference from the config file, if present."""
+    path = config_path if config_path is not None else _CONFIG_PATH
+    if not path.exists():
+        return None
+    cfg = configparser.ConfigParser()
+    cfg.read(path)
+    raw = cfg.get("defaults", "units", fallback=None)
+    return _normalize_units(raw) if raw else None
+
+
+def _resolve_units(args, config_path: Path | None = None) -> str:
+    """Resolve the effective unit system in priority order:
+    CLI flag > ASCII_WEATHER_UNITS env var > config file > metric.
+    """
+    if getattr(args, "fahrenheit", False):
+        return "imperial"
+    if getattr(args, "celsius", False):
+        return "metric"
+    if getattr(args, "units", None):
+        return args.units
+    env_val = os.environ.get("ASCII_WEATHER_UNITS")
+    if env_val:
+        resolved = _normalize_units(env_val)
+        if resolved:
+            return resolved
+    config_val = _config_units(config_path)
+    if config_val:
+        return config_val
+    return "metric"
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="weather", description="Current conditions for any city, in ASCII art."
+        prog="weather",
+        description=(
+            "Fetch the current weather for any city and render it as\n"
+            "colorful ASCII art in your terminal. No API key required."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=_HELP_EPILOG,
     )
     parser.add_argument(
         "city",
         nargs="?",
         default=None,
-        help="City name, e.g. 'Lisbon' or 'San Francisco'. "
-        "Falls back to the ASCII_WEATHER_CITY environment variable if omitted.",
+        help=(
+            "City name, e.g. 'Lisbon' or 'San Francisco, CA'. "
+            "Falls back to the ASCII_WEATHER_CITY env var when omitted."
+        ),
     )
-    parser.add_argument(
+
+    units_group = parser.add_mutually_exclusive_group()
+    units_group.add_argument(
+        "-f", "--fahrenheit",
+        action="store_true",
+        default=False,
+        help="Display temperatures in °F and wind in mph",
+    )
+    units_group.add_argument(
+        "-c", "--celsius",
+        action="store_true",
+        default=False,
+        help="Display temperatures in °C and wind in km/h",
+    )
+    units_group.add_argument(
         "--units",
         choices=["metric", "imperial"],
-        default="metric",
-        help="Display units: metric (°C, km/h) or imperial (°F, mph)",
+        default=None,
+        help="Unit system: metric (°C, km/h) or imperial (°F, mph)",
     )
+
     parser.add_argument(
         "--no-color", action="store_true", help="Disable ANSI color output"
     )
@@ -154,7 +248,7 @@ def build_parser() -> argparse.ArgumentParser:
         "-v",
         "--verbose",
         action="store_true",
-        help="Show resolved coordinates and the raw API response on stderr",
+        help="Print resolved coordinates and the raw API response to stderr",
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
@@ -178,6 +272,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(
             "city is required (pass it as an argument or set ASCII_WEATHER_CITY)"
         )
+
+    units = _resolve_units(args)
 
     try:
         location = geocode_city(city)
@@ -207,11 +303,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"weather: raw response: {json.dumps(conditions.raw)}", file=sys.stderr)
 
     if args.json:
-        print(render_json(location, conditions, units=args.units))
+        print(render_json(location, conditions, units=units))
         return 0
 
     use_color = should_use_color(args.no_color)
-    print(render(location, conditions, units=args.units, use_color=use_color))
+    print(render(location, conditions, units=units, use_color=use_color))
     return 0
 
 
