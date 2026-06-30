@@ -41,9 +41,11 @@ Planned for v1 (see [`docs/VISION.md`](docs/VISION.md) and
 
 - Look up current conditions for any city by name
 - Distinct ASCII art scenes for the major weather conditions (clear, cloudy,
-  rain, snow, thunderstorm, fog, etc.)
-- Terminal color rendering that adapts to the condition, with `--no-color`
-  and `NO_COLOR` support for piping into other tools
+  windy, light/normal/heavy rain and snow, thunderstorm, fog, etc.), with
+  moon/stars variants at night based on local time at the queried location
+- Terminal color rendering that adapts to the condition and time of day
+  (dimmer palette after dark), with `--no-color` and `NO_COLOR` support for
+  piping into other tools
 - Key stats at a glance: temperature, feels-like, humidity, wind, with
   `--units metric|imperial`
 - `--json` output for scripting, `-v/--verbose` for debugging lookups
