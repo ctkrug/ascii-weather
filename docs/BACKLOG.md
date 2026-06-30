@@ -19,7 +19,7 @@ intentionally coarse — they'll be refined as they're picked up.
       light rain/snow, and night-time variants
 - [x] Add a day/night color treatment (e.g. dimmer palette, moon instead of
       sun) based on local time at the queried location
-- [ ] Polish layout/alignment so art and stats line up cleanly across
+- [x] Polish layout/alignment so art and stats line up cleanly across
       terminal widths
 - [x] Add a `--no-color` flag (and respect `NO_COLOR`/non-TTY output) for
       piping into other tools or scripts
