@@ -3,7 +3,13 @@ import json
 import pytest
 
 from ascii_weather.cli import build_parser, main, render, render_json, should_use_color
-from ascii_weather.weather import CurrentConditions, Location, WeatherServiceError
+from ascii_weather.weather import (
+    AmbiguousCityError,
+    CityCandidate,
+    CurrentConditions,
+    Location,
+    WeatherServiceError,
+)
 
 
 def test_parser_requires_city():
@@ -34,6 +40,27 @@ def test_main_prints_friendly_message_on_weather_service_error(monkeypatch, caps
     assert main(["Lisbon"]) == 2
     err = capsys.readouterr().err
     assert "couldn't reach the weather service" in err
+
+
+def test_main_prints_disambiguation_prompt_on_ambiguous_city(monkeypatch, capsys):
+    def fake_geocode(city):
+        raise AmbiguousCityError(
+            "Springfield",
+            [
+                CityCandidate(name="Springfield", country="United States", country_code="US",
+                               admin1="Missouri"),
+                CityCandidate(name="Springfield", country="United States", country_code="US",
+                               admin1="Illinois"),
+            ],
+        )
+
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", fake_geocode)
+
+    assert main(["Springfield"]) == 1
+    err = capsys.readouterr().err
+    assert "multiple locations" in err
+    assert "Missouri" in err
+    assert "Illinois" in err
 
 
 def test_main_verbose_prints_coordinates_and_raw_response(monkeypatch, capsys):
