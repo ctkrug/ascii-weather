@@ -1,7 +1,7 @@
 import json
+import re
 
 import pytest
-
 import requests
 
 from ascii_weather.cli import build_parser, main, render, render_json, should_use_color
@@ -151,6 +151,55 @@ def test_main_uses_env_var_city_when_omitted(monkeypatch):
 
     assert main([]) == 0
     assert seen_city["city"] == "Lisbon"
+
+
+def test_render_places_art_and_stats_side_by_side():
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    output = render(location, conditions, use_color=False)
+    lines = output.splitlines()
+    place_line = next(line for line in lines if "Lisbon, PT" in line)
+    # The art column should appear before the info column on the same line.
+    assert place_line.index("Lisbon, PT") > 0
+
+
+def test_render_aligns_info_column_across_rows():
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    output = render(location, conditions, use_color=False)
+    info_texts = ["Lisbon, PT", "Clear sky", "21°C feels like 22°C", "Humidity 58%  Wind 11 km/h"]
+    columns = {line.index(text) for line, text in zip(output.splitlines(), info_texts)}
+    assert len(columns) == 1
+
+
+def test_render_color_does_not_break_info_column_alignment():
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="clear",
+        description="Clear sky",
+        temperature_c=21.0,
+        feels_like_c=22.0,
+        humidity_pct=58,
+        wind_kph=11,
+    )
+    plain = render(location, conditions, use_color=False)
+    colored = render(location, conditions, use_color=True)
+    stripped = re.sub(r"\033\[\d+m", "", colored)
+    assert stripped == plain
 
 
 def test_render_includes_place_and_temperature():
