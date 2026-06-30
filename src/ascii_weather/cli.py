@@ -1,6 +1,7 @@
 """Command-line entrypoint for ASCII Weather."""
 
 import argparse
+import json
 import os
 import sys
 
@@ -47,6 +48,34 @@ def render(location, conditions, units: str = "metric", use_color: bool = True) 
     return "\n".join(lines)
 
 
+def render_json(location, conditions, units: str = "metric") -> str:
+    if units == "imperial":
+        temperature = celsius_to_fahrenheit(conditions.temperature_c)
+        feels_like = celsius_to_fahrenheit(conditions.feels_like_c)
+        wind = kph_to_mph(conditions.wind_kph)
+    else:
+        temperature = conditions.temperature_c
+        feels_like = conditions.feels_like_c
+        wind = conditions.wind_kph
+
+    payload = {
+        "location": {
+            "name": location.name,
+            "country": location.country,
+            "latitude": location.latitude,
+            "longitude": location.longitude,
+        },
+        "condition": conditions.condition,
+        "description": conditions.description,
+        "units": units,
+        "temperature": round(temperature, 1),
+        "feels_like": round(feels_like, 1),
+        "humidity_pct": conditions.humidity_pct,
+        "wind": round(wind, 1),
+    }
+    return json.dumps(payload)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="weather", description="Current conditions for any city, in ASCII art."
@@ -60,6 +89,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--no-color", action="store_true", help="Disable ANSI color output"
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Output current conditions as JSON"
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
@@ -87,6 +119,10 @@ def main(argv: list[str] | None = None) -> int:
     except requests.RequestException as exc:
         print(f"weather: network error: {exc}", file=sys.stderr)
         return 2
+
+    if args.json:
+        print(render_json(location, conditions, units=args.units))
+        return 0
 
     use_color = should_use_color(args.no_color)
     print(render(location, conditions, units=args.units, use_color=use_color))
