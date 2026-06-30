@@ -22,10 +22,15 @@ $ weather Lisbon --json              # machine-readable output for scripting
 $ weather Lisbon --no-color          # plain text, no ANSI color
 $ weather Lisbon -v                  # also print resolved coordinates + raw API response
 $ ASCII_WEATHER_CITY=Lisbon weather  # omit the city arg, fall back to an env var
+$ weather "Springfield, Illinois"    # disambiguate a city name shared by many places
 ```
 
 Color is also automatically disabled when stdout isn't a terminal (e.g. piping
 to a file) or when the `NO_COLOR` environment variable is set.
+
+If a city name matches several comparably-sized places (e.g. `Springfield`),
+`weather` lists the candidates instead of silently guessing — pass
+`"City, State"` or `"City, Country"` to pick one.
 
 ## Why
 
