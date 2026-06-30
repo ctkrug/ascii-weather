@@ -91,6 +91,12 @@ def render(location, conditions, units: str = "metric", use_color: bool = True) 
     return _align_art_and_info(art, info_lines, color)
 
 
+def _round1(value: float) -> float:
+    """Round to one decimal place, normalizing -0.0 to 0.0 for clean JSON output."""
+    rounded = round(value, 1)
+    return rounded + 0.0
+
+
 def render_json(location, conditions, units: str = "metric") -> str:
     if units == "imperial":
         temperature = celsius_to_fahrenheit(conditions.temperature_c)
@@ -113,10 +119,10 @@ def render_json(location, conditions, units: str = "metric") -> str:
         "is_day": conditions.is_day,
         "windy": is_windy(conditions.wind_kph),
         "units": units,
-        "temperature": round(temperature, 1),
-        "feels_like": round(feels_like, 1),
+        "temperature": _round1(temperature),
+        "feels_like": _round1(feels_like),
         "humidity_pct": conditions.humidity_pct,
-        "wind": round(wind, 1),
+        "wind": _round1(wind),
     }
     return json.dumps(payload)
 
