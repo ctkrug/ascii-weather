@@ -3,7 +3,7 @@ import json
 import pytest
 
 from ascii_weather.cli import build_parser, main, render, render_json, should_use_color
-from ascii_weather.weather import CurrentConditions, Location
+from ascii_weather.weather import CurrentConditions, Location, WeatherServiceError
 
 
 def test_parser_requires_city():
@@ -23,6 +23,17 @@ def test_main_errors_without_city_or_env_var(monkeypatch, capsys):
     with pytest.raises(SystemExit):
         main([])
     assert "ASCII_WEATHER_CITY" in capsys.readouterr().err
+
+
+def test_main_prints_friendly_message_on_weather_service_error(monkeypatch, capsys):
+    def fake_geocode(city):
+        raise WeatherServiceError("could not reach the weather service after 3 attempts: boom")
+
+    monkeypatch.setattr("ascii_weather.cli.geocode_city", fake_geocode)
+
+    assert main(["Lisbon"]) == 2
+    err = capsys.readouterr().err
+    assert "couldn't reach the weather service" in err
 
 
 def test_main_verbose_prints_coordinates_and_raw_response(monkeypatch, capsys):
