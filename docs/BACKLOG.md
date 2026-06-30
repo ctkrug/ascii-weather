@@ -31,7 +31,7 @@ intentionally coarse — they'll be refined as they're picked up.
       `weather` with no arguments still works (`ASCII_WEATHER_CITY`)
 - [ ] Improve error messages for ambiguous/misspelled city names (e.g. "did
       you mean...")
-- [ ] Add `-v/--verbose` to show the resolved coordinates and raw API
+- [x] Add `-v/--verbose` to show the resolved coordinates and raw API
       response for debugging
 
 ## Epic 4 — Packaging & distribution
