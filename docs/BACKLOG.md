@@ -38,7 +38,7 @@ intentionally coarse — they'll be refined as they're picked up.
 
 - [ ] Publish to PyPI as `ascii-weather` with a working `pipx install`
       story
-- [ ] Add a richer test suite covering the CLI end-to-end with a mocked
+- [x] Add a richer test suite covering the CLI end-to-end with a mocked
       HTTP layer (no live network calls in CI)
-- [ ] Expand README with install badges, more usage examples, and a GIF/
+- [x] Expand README with install badges, more usage examples, and a GIF/
       screenshot of real output
