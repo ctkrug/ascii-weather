@@ -7,6 +7,7 @@ from ascii_weather.weather import (
     celsius_to_fahrenheit,
     condition_for_code,
     fetch_current_conditions,
+    is_windy,
     kph_to_mph,
 )
 
@@ -45,6 +46,14 @@ def test_celsius_to_fahrenheit():
 
 def test_kph_to_mph():
     assert round(kph_to_mph(100), 2) == 62.14
+
+
+def test_is_windy_below_threshold():
+    assert is_windy(10.0) is False
+
+
+def test_is_windy_above_threshold():
+    assert is_windy(45.0) is True
 
 
 class _FakeResponse:
