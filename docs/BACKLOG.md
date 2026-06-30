@@ -15,9 +15,9 @@ intentionally coarse — they'll be refined as they're picked up.
 
 ## Epic 2 — ASCII art & rendering
 
-- [ ] Expand art coverage: distinct scenes for windy conditions, heavy vs.
+- [x] Expand art coverage: distinct scenes for windy conditions, heavy vs.
       light rain/snow, and night-time variants
-- [ ] Add a day/night color treatment (e.g. dimmer palette, moon instead of
+- [x] Add a day/night color treatment (e.g. dimmer palette, moon instead of
       sun) based on local time at the queried location
 - [ ] Polish layout/alignment so art and stats line up cleanly across
       terminal widths
