@@ -128,7 +128,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def should_use_color(no_color_flag: bool) -> bool:
     """Decide whether to emit ANSI color, honoring --no-color, NO_COLOR, and non-TTY output."""
-    if no_color_flag or os.environ.get("NO_COLOR"):
+    if no_color_flag or "NO_COLOR" in os.environ:
         return False
     return sys.stdout.isatty()
 
