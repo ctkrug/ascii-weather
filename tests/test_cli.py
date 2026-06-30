@@ -202,6 +202,25 @@ def test_render_color_does_not_break_info_column_alignment():
     assert stripped == plain
 
 
+def test_render_taller_art_has_no_trailing_whitespace_past_info():
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    conditions = CurrentConditions(
+        condition="snow_heavy",
+        description="Heavy snow",
+        temperature_c=-2.0,
+        feels_like_c=-5.0,
+        humidity_pct=80,
+        wind_kph=11,
+    )
+    output = render(location, conditions, use_color=False)
+    lines = output.splitlines()
+    # snow_heavy's art has more rows than the 4 info lines; the extra
+    # art-only rows should be plain art text, not padded with trailing spaces.
+    assert len(lines) > 4
+    for line in lines[4:]:
+        assert line == line.rstrip()
+
+
 def test_render_includes_place_and_temperature():
     location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
     conditions = CurrentConditions(
