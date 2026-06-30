@@ -7,11 +7,16 @@ browser tab, no clutter — just the sky, drawn in text.
 ```
 $ weather Lisbon
 
-      .--.      Lisbon, PT
-   .-(    ).    Partly Cloudy
-  (___.__)__)   21°C  feels like 22°C
-                Humidity 58%  Wind 11 km/h
+    \   /    Lisbon, PT
+     .-.     Clear sky
+  ― (   ) ―  24°C feels like 25°C
+     `-'     Humidity 45%  Wind 8 km/h
+    /   \
 ```
+
+Each condition gets its own scene — clouds, rain, snow, fog, a storm, a moon
+and stars at night — colored to match, so the *shape* of the output tells you
+the weather before you've read a word.
 
 ## Usage
 
