@@ -9,21 +9,23 @@ import requests
 
 from ascii_weather import __version__
 from ascii_weather.art import get_art
-from ascii_weather.colors import CONDITION_COLOR, colorize
+from ascii_weather.colors import color_for_condition, colorize
 from ascii_weather.weather import (
     CityNotFoundError,
     WeatherServiceError,
     celsius_to_fahrenheit,
     fetch_current_conditions,
     geocode_city,
+    is_windy,
     kph_to_mph,
 )
 
 
 def render(location, conditions, units: str = "metric", use_color: bool = True) -> str:
-    art = get_art(conditions.condition)
+    windy = is_windy(conditions.wind_kph)
+    art = get_art(conditions.condition, is_day=conditions.is_day, windy=windy)
     if use_color:
-        color = CONDITION_COLOR.get(conditions.condition, "bright_white")
+        color = color_for_condition(conditions.condition, is_day=conditions.is_day)
         art = colorize(art, color)
     lines = [art]
     place = location.name
@@ -68,6 +70,8 @@ def render_json(location, conditions, units: str = "metric") -> str:
         },
         "condition": conditions.condition,
         "description": conditions.description,
+        "is_day": conditions.is_day,
+        "windy": is_windy(conditions.wind_kph),
         "units": units,
         "temperature": round(temperature, 1),
         "feels_like": round(feels_like, 1),
