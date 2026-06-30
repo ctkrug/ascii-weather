@@ -1,4 +1,4 @@
-from ascii_weather.weather import condition_for_code
+from ascii_weather.weather import celsius_to_fahrenheit, condition_for_code, kph_to_mph
 
 
 def test_clear_sky_code():
@@ -14,3 +14,12 @@ def test_thunderstorm_code():
 def test_unknown_code_falls_back():
     condition, description = condition_for_code(-1)
     assert condition == "unknown"
+
+
+def test_celsius_to_fahrenheit():
+    assert celsius_to_fahrenheit(0) == 32
+    assert celsius_to_fahrenheit(100) == 212
+
+
+def test_kph_to_mph():
+    assert round(kph_to_mph(100), 2) == 62.14
