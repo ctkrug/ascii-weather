@@ -224,6 +224,22 @@ def test_geocode_city_picks_dominant_result_unambiguously(monkeypatch):
     assert location.country == "PT"
 
 
+def test_geocode_city_excludes_rival_below_dominance_ratio(monkeypatch):
+    # The second result clears the population floor but isn't within a
+    # third of the top result's population, so it shouldn't count as a
+    # genuine rival and the top match should be picked unambiguously.
+    results = [
+        _geocode_result("Springfield", "United States", "US", "Missouri", 170188),
+        _geocode_result("Springfield", "United States", "US", "Vermont", 15000),
+    ]
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _FakeGeocodeResponse(results),
+    )
+    location = geocode_city("Springfield")
+    assert location.country == "US"
+
+
 def test_geocode_city_raises_ambiguous_for_comparable_results(monkeypatch):
     results = [
         _geocode_result("Springfield", "United States", "US", "Missouri", 170188),
