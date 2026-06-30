@@ -32,6 +32,16 @@ def render_ambiguous_city_error(exc: AmbiguousCityError) -> str:
     return "\n".join(lines)
 
 
+def _round_temp(value: float) -> int:
+    """Round a temperature to the nearest whole degree without a "-0" result.
+
+    round() with no ndigits returns an int, which has no negative-zero
+    representation, so a value like -0.4 correctly becomes 0 instead of
+    the "-0" a naive f"{value:.0f}" format would print.
+    """
+    return round(value)
+
+
 def _align_art_and_info(art: str, info_lines: list[str], color: str | None) -> str:
     """Lay out ASCII art and info text side by side, art on the left.
 
@@ -68,12 +78,12 @@ def render(location, conditions, units: str = "metric", use_color: bool = True) 
         temp = celsius_to_fahrenheit(conditions.temperature_c)
         feels_like = celsius_to_fahrenheit(conditions.feels_like_c)
         wind = kph_to_mph(conditions.wind_kph)
-        info_lines.append(f"{temp:.0f}°F feels like {feels_like:.0f}°F")
+        info_lines.append(f"{_round_temp(temp)}°F feels like {_round_temp(feels_like)}°F")
         info_lines.append(f"Humidity {conditions.humidity_pct:.0f}%  Wind {wind:.0f} mph")
     else:
         info_lines.append(
-            f"{conditions.temperature_c:.0f}°C "
-            f"feels like {conditions.feels_like_c:.0f}°C"
+            f"{_round_temp(conditions.temperature_c)}°C "
+            f"feels like {_round_temp(conditions.feels_like_c)}°C"
         )
         info_lines.append(
             f"Humidity {conditions.humidity_pct:.0f}%  Wind {conditions.wind_kph:.0f} km/h"
