@@ -21,7 +21,7 @@ intentionally coarse — they'll be refined as they're picked up.
       sun) based on local time at the queried location
 - [ ] Polish layout/alignment so art and stats line up cleanly across
       terminal widths
-- [ ] Add a `--no-color` flag (and respect `NO_COLOR`/non-TTY output) for
+- [x] Add a `--no-color` flag (and respect `NO_COLOR`/non-TTY output) for
       piping into other tools or scripts
 
 ## Epic 3 — CLI polish & UX
