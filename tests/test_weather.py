@@ -59,6 +59,10 @@ def test_is_windy_above_threshold():
     assert is_windy(45.0) is True
 
 
+def test_is_windy_at_exact_threshold_counts_as_windy():
+    assert is_windy(30.0) is True
+
+
 class _FakeResponse:
     def raise_for_status(self):
         pass
