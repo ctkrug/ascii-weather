@@ -215,6 +215,30 @@ def test_geocode_city_region_suffix_with_no_match_raises_not_found(monkeypatch):
         pass
 
 
+def test_geocode_city_raises_not_found_for_blank_name(monkeypatch):
+    def fail_if_called(url, params, timeout):
+        raise AssertionError("blank city names should not hit the network")
+
+    monkeypatch.setattr("ascii_weather.weather.requests.get", fail_if_called)
+    try:
+        geocode_city("   ")
+        assert False, "expected CityNotFoundError"
+    except CityNotFoundError:
+        pass
+
+
+def test_geocode_city_raises_not_found_for_blank_name_with_region(monkeypatch):
+    def fail_if_called(url, params, timeout):
+        raise AssertionError("blank city names should not hit the network")
+
+    monkeypatch.setattr("ascii_weather.weather.requests.get", fail_if_called)
+    try:
+        geocode_city(", Illinois")
+        assert False, "expected CityNotFoundError"
+    except CityNotFoundError:
+        pass
+
+
 def test_geocode_city_raises_not_found_when_no_results(monkeypatch):
     monkeypatch.setattr(
         "ascii_weather.weather.requests.get",
