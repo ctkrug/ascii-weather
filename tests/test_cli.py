@@ -170,6 +170,13 @@ def test_should_use_color_respects_no_color_env_var(monkeypatch):
     assert should_use_color(no_color_flag=False) is False
 
 
+def test_should_use_color_respects_no_color_set_to_empty_string(monkeypatch):
+    # Per the NO_COLOR spec, presence of the variable disables color
+    # regardless of its value, including an empty string.
+    monkeypatch.setenv("NO_COLOR", "")
+    assert should_use_color(no_color_flag=False) is False
+
+
 def test_render_json_produces_parseable_payload():
     location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
     conditions = CurrentConditions(
