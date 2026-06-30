@@ -114,6 +114,27 @@ class _FakeForecastResponse:
         }
 
 
+class _IncompleteForecastResponse:
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        return {"current": {"temperature_2m": 10.0}}  # missing weather_code, etc.
+
+
+def test_fetch_current_conditions_raises_service_error_on_incomplete_payload(monkeypatch):
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _IncompleteForecastResponse(),
+    )
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    try:
+        fetch_current_conditions(location)
+        assert False, "expected WeatherServiceError"
+    except WeatherServiceError as exc:
+        assert "incomplete conditions" in str(exc)
+
+
 def test_fetch_current_conditions_parses_is_day_true(monkeypatch):
     monkeypatch.setattr(
         "ascii_weather.weather.requests.get",
@@ -132,6 +153,39 @@ def test_fetch_current_conditions_parses_is_day_false(monkeypatch):
     location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
     conditions = fetch_current_conditions(location)
     assert conditions.is_day is False
+
+
+class _InvalidJsonResponse:
+    def raise_for_status(self):
+        pass
+
+    def json(self):
+        raise ValueError("Expecting value: line 1 column 1 (char 0)")
+
+
+def test_geocode_city_raises_service_error_on_invalid_json(monkeypatch):
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _InvalidJsonResponse(),
+    )
+    try:
+        geocode_city("Lisbon")
+        assert False, "expected WeatherServiceError"
+    except WeatherServiceError as exc:
+        assert "invalid response" in str(exc)
+
+
+def test_fetch_current_conditions_raises_service_error_on_invalid_json(monkeypatch):
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _InvalidJsonResponse(),
+    )
+    location = Location(name="Lisbon", country="PT", latitude=38.7, longitude=-9.1)
+    try:
+        fetch_current_conditions(location)
+        assert False, "expected WeatherServiceError"
+    except WeatherServiceError as exc:
+        assert "invalid response" in str(exc)
 
 
 class _FakeGeocodeResponse:
@@ -237,6 +291,19 @@ def test_geocode_city_raises_not_found_for_blank_name_with_region(monkeypatch):
         assert False, "expected CityNotFoundError"
     except CityNotFoundError:
         pass
+
+
+def test_geocode_city_raises_service_error_on_incomplete_result(monkeypatch):
+    incomplete = [{"name": "Lisbon", "country_code": "PT"}]  # missing latitude/longitude
+    monkeypatch.setattr(
+        "ascii_weather.weather.requests.get",
+        lambda url, params, timeout: _FakeGeocodeResponse(incomplete),
+    )
+    try:
+        geocode_city("Lisbon")
+        assert False, "expected WeatherServiceError"
+    except WeatherServiceError as exc:
+        assert "incomplete location" in str(exc)
 
 
 def test_geocode_city_raises_not_found_when_no_results(monkeypatch):
