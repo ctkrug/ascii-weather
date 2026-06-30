@@ -26,6 +26,18 @@ def test_unknown_code_falls_back():
     assert condition == "unknown"
 
 
+def test_rain_intensity_distinguishes_light_normal_heavy():
+    assert condition_for_code(51)[0] == "rain_light"
+    assert condition_for_code(63)[0] == "rain"
+    assert condition_for_code(65)[0] == "rain_heavy"
+
+
+def test_snow_intensity_distinguishes_light_normal_heavy():
+    assert condition_for_code(71)[0] == "snow_light"
+    assert condition_for_code(73)[0] == "snow"
+    assert condition_for_code(75)[0] == "snow_heavy"
+
+
 def test_celsius_to_fahrenheit():
     assert celsius_to_fahrenheit(0) == 32
     assert celsius_to_fahrenheit(100) == 212
